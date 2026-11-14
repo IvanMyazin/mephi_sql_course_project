@@ -1,0 +1,4 @@
+dbname: mydb
+host: localhost
+port: 5432
+schema: taxi_project

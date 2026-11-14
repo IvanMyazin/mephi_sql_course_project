@@ -1,52 +1,27 @@
--- Вариант 19
+DROP SCHEMA IF EXISTS taxi_project CASCADE;
+CREATE SCHEMA taxi_project;
 
-
-DROP SCHEMA IF EXISTS taxi CASCADE;
-CREATE SCHEMA IF NOT EXISTS taxi;
-
-
-CREATE TABLE IF NOT EXISTS taxi.vehicles (
-	id serial PRIMARY KEY,
-	brand text NOT NULL, --марка
-	segment text NOT NULL, --класс авто
-	registration_number text NOT NULL, --госномер
-	colour text NOT NULL, --цвет
-	prod_year int NOT NULL -- год выпуска
+CREATE TABLE taxi_project.vehicles (
+    id serial PRIMARY KEY,
+    brand varchar(50) NOT NULL CHECK (length(trim(brand)) > 0),
+    segment varchar(20) NOT NULL CHECK (segment IN ('эконом', 'комфорт', 'бизнес')),
+    registration_number varchar(9) NOT NULL UNIQUE
+        CHECK (registration_number ~ '^[АВЕКМНОРСТУХ][0-9]{3}[АВЕКМНОРСТУХ]{2}[0-9]{2,3}$'),
+    colour varchar(30) NOT NULL CHECK (length(trim(colour)) > 0),
+    prod_year integer NOT NULL
+        CHECK (prod_year BETWEEN 1900 AND EXTRACT(YEAR FROM CURRENT_DATE) + 1)
 );
 
-CREATE TABLE IF NOT EXISTS taxi.drivers (
-	id serial PRIMARY KEY,
-	surname text NOT NULL, --фамилия
-	name text NOT NULL, --имя
-	middle_name text, --отчетсво
-	burth_date date NOT NULL, --дата рождения
-	inn CHAR(12) NOT NULL UNIQUE CHECK (inn ~ '^[0-9]{12}$'), --инн
-	passport CHAR(10) NOT NULL UNIQUE CHECK (passport ~ '^[0-9]{10}$'), -- серия и номер паспорта
-	vehicle_id int NOT NULL REFERENCES taxi.vehicles(id)
-);
-
-CREATE TABLE IF NOT EXISTS taxi.tariffs (
-	id serial PRIMARY KEY,
-	name text NOT NULL,
-	is_day bool NOT NULL,
-	tarrif_type text NOT NULL,
-	price_per_km numeric(10, 2) NOT NULL CHECK (price_per_km > 0)
-);
-
-CREATE TABLE IF NOT EXISTS taxi.orders(
-	id serial PRIMARY KEY,
-	date_time timestamp NOT NULL,
-	adress text NOT NULL,
-	passenger_cnt int CHECK (passenger_cnt  > 0 AND passenger_cnt < 10),
-	distance_km NUMERIC (7, 3) NOT NULL CHECK (distance_km > 0),
-	driver_id int REFERENCES taxi.drivers(id) 
-);
-
-CREATE TABLE IF NOT EXISTS taxi.payments (
-	id serial PRIMARY KEY,
-	order_id int NOT NULL REFERENCES taxi.orders(id),
-	tariff_id int NOT NULL REFERENCES taxi.tariffs(id),
-	distance_km NUMERIC (7, 3) NOT NULL CHECK (distance_km > 0),
-	amount numeric(10, 2) NOT NULL CHECK (amount > 0),
-	CONSTRAINT payments_unique_order_id_tariff_id UNIQUE (order_id, tariff_id)
+CREATE TABLE taxi_project.drivers (
+    id serial PRIMARY KEY,
+    surname varchar(50) NOT NULL CHECK (surname ~ '^[A-Za-zА-Яа-яЁё -]+$'),
+    name varchar(50) NOT NULL CHECK (name ~ '^[A-Za-zА-Яа-яЁё -]+$'),
+    middle_name varchar(50)
+        CHECK (middle_name IS NULL OR middle_name ~ '^[A-Za-zА-Яа-яЁё -]+$'),
+    birth_date date NOT NULL
+        CHECK (birth_date >= DATE '1900-01-01'
+            AND birth_date <= CURRENT_DATE - INTERVAL '18 years'),
+    inn char(12) NOT NULL UNIQUE CHECK (inn ~ '^[0-9]{12}$'),
+    passport char(10) NOT NULL UNIQUE CHECK (passport ~ '^[0-9]{10}$'),
+    vehicle_id integer NOT NULL REFERENCES taxi_project.vehicles(id) ON DELETE CASCADE
 );
